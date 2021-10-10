@@ -16,19 +16,34 @@ const userSchema = new mongoose.Schema({
 const drillSchema = new mongoose.Schema({
   description: { type: String, required: true },
   duration: { type: Number, required: true },
-  date: {type: Date, required: true }
+  date: {type: String, required: true }
 });
 
-const Users = mongoose.model('user', userSchema);
-const Drills = mongoose.model('drill', drillSchema);
+const User = mongoose.model('User', userSchema);
+const Drill = mongoose.model('Drill', drillSchema);
 
-app.use(cors())
-app.use(express.static('public'))
+app.use(cors());
+app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: false }));
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
+app.post('/api/users', async function(req, res) {
+  const { username } = req.body;
 
+  const user = new User({
+    username: username
+  });
+
+  await user.save();
+
+  res.json({
+    username: username,
+    _id: user._id
+  });
+});
 
 
 
