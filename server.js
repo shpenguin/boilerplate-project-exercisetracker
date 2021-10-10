@@ -82,7 +82,10 @@ app.post('/api/users/:_id/logs', async function(req, res) {
 });
 
 app.get('/api/users/:id/logs', async function(req, res) {
+  const { id } = req.parms;
   const { from, to, limit } = req.query;
+
+  
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
