@@ -8,15 +8,15 @@ const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  log: [drillSchema]
-});
-
 const drillSchema = new mongoose.Schema({
   description: { type: String, required: true },
   duration: { type: Number, required: true },
-  date: {type: String, required: true }
+  date: { type: String, required: true }
+});
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  log: [drillSchema]
 });
 
 const User = mongoose.model('User', userSchema);
@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
-app.post('/api/users', async function(req, res) {
+app.post('/api/users', async function (req, res) {
   const { username } = req.body;
 
   const user = new User({
@@ -45,7 +45,7 @@ app.post('/api/users', async function(req, res) {
   });
 });
 
-app.get('/api/users', async function(req, res) {
+app.get('/api/users', async function (req, res) {
   await User.find({}, (err, docs) => {
     if (!err) {
       res.json(docs);
@@ -53,7 +53,7 @@ app.get('/api/users', async function(req, res) {
   });
 });
 
-app.post('/api/users/:_id/logs', async function(req, res) {
+app.post('/api/users/:_id/logs', async function (req, res) {
   const drill = new Drill({
     description: req.body.description,
     duration: parseInt(req.body.duration),
@@ -65,27 +65,48 @@ app.post('/api/users/:_id/logs', async function(req, res) {
   }
 
   await User.findByIdAndUpdate(
-    req.body['_id'], 
-    {$push: { log: drill }},
-    {new: true},
+    req.body['_id'],
+    { $push: { log: drill } },
+    { new: true },
     (err, doc) => {
-    if (!err) {
-      res.json({
-        _id: doc.id,
-        username: doc.username,
-        date: drill.date,
-        description: drill.description,
-        duration: drill.duration
-      });
-    }
-  });
+      if (!err) {
+        res.json({
+          _id: doc.id,
+          username: doc.username,
+          date: drill.date,
+          description: drill.description,
+          duration: drill.duration
+        });
+      }
+    });
 });
 
-app.get('/api/users/:id/logs', async function(req, res) {
+app.get('/api/users/:id/logs', async function (req, res) {
   const { id } = req.parms;
-  const { from, to, limit } = req.query;
 
-  
+  await User.findById(id, (err, doc) => {
+    if (!err) {
+      const { from, to, limit } = req.query;
+      const fromDate = (!from) ? +new Date(0) : +new Date(from);
+      const toDate = (!to) ? +new Date() : +new Date(to);
+
+      const log = doc.log.filter(obj, function(obj) {
+        const date = +new Date(obj.date);
+        return date >= fromDate && date <= toDate;
+      }).slice(0, limit);
+
+      res.json({
+        
+      });
+
+
+
+    }
+
+  })
+
+
+  //console.log(from);
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
