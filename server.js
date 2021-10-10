@@ -45,7 +45,45 @@ app.post('/api/users', async function(req, res) {
   });
 });
 
+app.get('/api/users', async function(req, res) {
+  await User.find({}, (err, docs) => {
+    if (!err) {
+      res.json(docs);
+    }
+  });
+});
 
+app.post('/api/users/:_id/logs', async function(req, res) {
+  const drill = new Drill({
+    description: req.body.description,
+    duration: parseInt(req.body.duration),
+    date: new Date(req.body.date).toDateString()
+  });
+
+  if (drill.date === '' || drill.date === 'Invalid Date') {
+    drill.date = new Date().toISOString.substring(0, 10);
+  }
+
+  await User.findByIdAndUpdate(
+    req.body['_id'], 
+    {$push: { log: drill }},
+    {new: true},
+    (err, doc) => {
+    if (!err) {
+      res.json({
+        _id: doc.id,
+        username: doc.username,
+        date: drill.date,
+        description: drill.description,
+        duration: drill.duration
+      });
+    }
+  });
+});
+
+app.get('/api/users/:id/logs', async function(req, res) {
+  const { from, to, limit } = req.query;
+})
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
