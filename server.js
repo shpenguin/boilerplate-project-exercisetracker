@@ -45,33 +45,35 @@ app.post('/api/users', async function (req, res) {
   });
 });
 
-app.get('/api/users', async function (req, res) {
-  await User.find({}, (err, docs) => {
+app.get('/api/users', function (req, res) {
+  User.find({}, '-log', (err, docs) => {
     if (!err) {
       res.json(docs);
     }
   });
 });
 
-app.post('/api/users/:_id/logs', async function (req, res) {
+app.post('/api/users/:id/exercises', function (req, res) {
+  const { id } = req.params;
+
   const drill = new Drill({
     description: req.body.description,
     duration: parseInt(req.body.duration),
     date: new Date(req.body.date).toDateString()
   });
 
-  if (drill.date === '' || drill.date === 'Invalid Date') {
-    drill.date = new Date().toISOString.substring(0, 10);
+  if (drill.date === 'Invalid Date') {
+    drill.date = new Date().toDateString();
   }
 
-  await User.findByIdAndUpdate(
-    req.body['_id'],
+  User.findByIdAndUpdate(
+    id,
     { $push: { log: drill } },
     { new: true },
     (err, doc) => {
       if (!err) {
         res.json({
-          _id: doc.id,
+          _id: doc._id,
           username: doc.username,
           date: drill.date,
           description: drill.description,
@@ -81,33 +83,34 @@ app.post('/api/users/:_id/logs', async function (req, res) {
     });
 });
 
-app.get('/api/users/:id/logs', async function (req, res) {
-  const { id } = req.parms;
+app.get('/api/users/:id/logs', function (req, res) {
+  const { id } = req.params;
 
-  await User.findById(id, (err, doc) => {
+  User.findById(id, '-log._id', (err, doc) => {
+
     if (!err) {
       const { from, to, limit } = req.query;
       const fromDate = (!from) ? +new Date(0) : +new Date(from);
       const toDate = (!to) ? +new Date() : +new Date(to);
 
-      const log = doc.log.filter(obj, function(obj) {
-        const date = +new Date(obj.date);
+      let log = doc.log.filter(function(item) {
+        const date = +new Date(item.date);
         return date >= fromDate && date <= toDate;
-      }).slice(0, limit);
-
-      res.json({
-        
       });
 
-
-
+      if (limit) {
+        log = log.slice(0, +limit);
+      }
+      
+      res.json({
+        _id: doc._id,
+        username: doc.username,
+        count: log.length,
+        log: log
+      });
     }
-
-  })
-
-
-  //console.log(from);
-})
+  });
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
